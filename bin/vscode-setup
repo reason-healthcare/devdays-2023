@@ -1,0 +1,65 @@
+#!/usr/bin/env node
+
+const path = require('path')
+const {
+  execCommand,
+  readFiles,
+  fshGeneratedDirectory,
+  vocabularyDirectory,
+  testDirectory,
+} = require('./_common')
+
+execCommand(`${path.resolve(path.join(__dirname))}/vscode-teardown`)
+
+execCommand(`rm -rf ${path.resolve(path.join(__dirname, '..', 'fsh-generated'))}`)
+execCommand(`mkdir -p ${vocabularyDirectory}`)
+
+const command = [`sushi .`]
+command.push(`cp ${fshGeneratedDirectory}/ValueSet* ${vocabularyDirectory}`)
+execCommand(command.join(' && '))
+
+// Copy patient data bundles over to the test directory structure
+readFiles(
+  fshGeneratedDirectory,
+  function (filename, content) {
+    if (filename.endsWith('.json')) {
+      const fhir = JSON.parse(content)
+      if (
+        fhir.resourceType === 'Bundle' &&
+        fhir?.meta?.tag?.some((tag) => tag?.code === 'testcase')
+      ) {
+        console.log('Found a test bundle', fhir.id, filename)
+        const patient = fhir.entry?.find(
+          (e) => e?.resource?.resourceType === 'Patient'
+        )?.resource
+        if (patient == null) {
+          console.error('could not find a patient')
+          return
+        }
+        readFiles(
+          path.resolve(path.join(__dirname, '..', 'input', 'cql')),
+          function (cqlFilename, _cqlContent) {
+            if (cqlFilename.endsWith('.cql')) {
+              const cqlLibName = path.basename(cqlFilename).slice(0, -4)
+              const testDirname = path.resolve(
+                path.join(testDirectory, cqlLibName, patient.id)
+              )
+              execCommand(`mkdir -p ${testDirname}`)
+              execCommand(
+                `cp ${path.resolve(
+                  path.join(fshGeneratedDirectory, filename)
+                )} ${path.resolve(path.join(testDirname))}`
+              )
+            }
+          },
+          function (err) {
+            console.error(err)
+          }
+        )
+      }
+    }
+  },
+  function (err) {
+    console.error(err)
+  }
+)

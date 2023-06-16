@@ -1,0 +1,13 @@
+{
+  "options": [
+    "EnableAnnotations",
+    "EnableLocators",
+    "DisableListDemotion",
+    "DisableListPromotion"
+  ],
+  "formats": ["JSON", "XML"],
+  "validateUnits": true,
+  "verifyOnly": false,
+  "errorLevel": "Info",
+  "signatureLevel": "None"
+}

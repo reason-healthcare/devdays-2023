@@ -1,0 +1,10 @@
+#!/usr/bin/env node
+
+const { execCommand, vocabularyDirectory, testDirectory } = require('./_common')
+
+const command = [`rm -rf ${vocabularyDirectory}`]
+command.push(`mkdir -p ${vocabularyDirectory}`)
+command.push(`rm -rf ${testDirectory}`)
+command.push(`mkdir -p ${testDirectory}`)
+
+execCommand(command.join(' && '))
